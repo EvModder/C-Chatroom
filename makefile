@@ -1,4 +1,3 @@
-
 all: crc crs crm
 
 crc:
@@ -8,7 +7,7 @@ crs:
 	gcc chatroom_server.c -o server.o -lpthread
 
 crm:
-	gcc chatroom_manager.c -o manager.o
+	gcc chatroom_manager.c -o manager.o -lpthread
 
 clean:
 	rm *.o

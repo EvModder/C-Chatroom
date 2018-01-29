@@ -2,18 +2,14 @@
 //To compile: "make" or "gcc chatroom_client.c";
 //Server available at chatroom-438.cf, or you can run your own
 
-#include <unistd.h>
-#include <signal.h>
+#include "interface.h"
 #include <netinet/in.h>
 #include <stdlib.h>
-#include "interface.h"
 
-/*
- * TODO: IMPLEMENT BELOW THREE FUNCTIONS
- */
 int connect_to(const char* host, const unsigned short port);
 struct Reply process_command(const int sockfd, char* command);
 void enter_chatmode(const char* host, const int port);
+int REPLY_SIZE = sizeof(struct Reply);
 
 int main(int argc, char** argv){
 	//If not specified, use defaults.
@@ -26,42 +22,46 @@ int main(int argc, char** argv){
 	// 	return EXIT_FAILURE;
 	// }
 
-	display_title();
-	while(1){
-		// Read in a command from the user
-		char command[MAX_DATA];
-		get_command(command, MAX_DATA);
-		touppercase(command, strlen(command)-1);
+	// Ping the Chatroom Manager to make sure we can send commands
+	int sockfd = connect_to(host_addr, port);
+	if(sockfd < 0 || write(sockfd, "PING", 4) < 0){
+		exit(EXIT_FAILURE);
+	}
 
-		// Exiting the program
+	display_title();
+	char command[MAX_DATA];
+	while(1){
+		// Read a command from the user
+		get_command(command, MAX_DATA);
+		touppercase(command);
+
+		// If exiting the program
 		if(startswith(command, "EXIT")) break;
 
-		// Otherwise, send this command to the Host Server
-		int sockfd = connect_to(host_addr, port);
-		if(sockfd < 0) return EXIT_FAILURE;
+		// Connect to the Chatroom Manager
+		if((sockfd = connect_to(host_addr, port)) < 0) exit(EXIT_FAILURE);
 
+		// Send command to the Chatroom Manager
 		struct Reply reply = process_command(sockfd, command);
 		display_reply(command, reply);
 
+		// If a successful JOIN, put this client in chatmode
 		if(reply.status == SUCCESS && startswith(command, "JOIN")){
 			enter_chatmode(reply.host, reply.port);
 		}
 	}
-	return EXIT_SUCCESS;
 }
 
 /*
  * Connect to the server using given host and port information
- *
  * @parameter host    host address given by command line argument
  * @parameter port    port given by command line argument
- *
  * @return socket fildescriptor
  */
 int connect_to(const char* host, const unsigned short port){
 	int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if(sockfd < 0){
-		perror("Error getting socket!");
+		perror("Error getting socket");
 		return sockfd;
 	}
 	struct sockaddr_in serv_addr;
@@ -69,7 +69,7 @@ int connect_to(const char* host, const unsigned short port){
 	serv_addr.sin_addr.s_addr = inet_addr(host);
 	serv_addr.sin_port = htons(port);
 	if(connect(sockfd, (struct sockaddr*) &serv_addr , sizeof(serv_addr)) < 0){
-		perror("Error connecting to server!");
+		perror("Error connecting to server");
 		return -1;
 	}
 	return sockfd;
@@ -83,85 +83,21 @@ int connect_to(const char* host, const unsigned short port){
  */
 struct Reply process_command(const int sockfd, char* command){
 	// If reply status is never set, assume FAILURE_UNKNOWN
-	Reply reply;
+	struct Reply reply;
 	reply.status = FAILURE_UNKNOWN;
 
 	// Write command to server
-	if(write(sockfd, message, MAX_DATA) < 0){
+	if(write(sockfd, command, MAX_DATA) < 0){
 		perror("Unable to send message to server");
-		return reply:
+		return reply;
 	}
-	// Receive response from server with 10 second timeout
+	// Receive reply from server with 10 second timeout
 	struct timeval tv = {10, 0};
 	setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
-	char response[MAX_DATA];
-	if(read(sockfd, response, MAX_DATA) <= 0){
-		perror("No response from server (or invalid)");
-		return reply:
+	if(read(sockfd, &reply, REPLY_SIZE) <= 0){
+		perror("Missing/Invalid response from server");
 	}
-
-	// ------------------------------------------------------------
-	// GUIDE 3:
-	// Then, you should create a variable of Reply structure
-	// provided by the interface and initialize it according to
-	// the result.
-	//
-	// For example, if a given command is "JOIN room1"
-	// and the server successfully created the chatroom,
-	// the server will reply a message including information about
-	// success/failure, the number of members and port number.
-	// By using this information, you should set the Reply variable.
-	// the variable will be set as following:
-	//
-	// Reply reply;
-	// reply.status = SUCCESS;
-	// reply.num_member = number;
-	// reply.port = port;
-	//
-	// "number" and "port" variables are just an integer variable
-	// and can be initialized using the message fomr the server.
-	//
-	// For another example, if a given command is "CREATE room1"
-	// and the server failed to create the chatroom becuase it
-	// already exists, the Reply varible will be set as following:
-	//
-	// Reply reply;
-	// reply.status = FAILURE_ALREADY_EXISTS;
-	//
-	// For the "LIST" command,
-	// You are suppose to copy the list of chatroom to the list_room
-	// variable. Each room name should be seperated by comma ','.
-	// For example, if given command is "LIST", the Reply variable
-	// will be set as following.
-	//
-	// Reply reply;
-	// reply.status = SUCCESS;
-	// strcpy(reply.list_room, list);
-	//
-	// "list" is a string that contains a list of chat rooms such
-	// as "r1,r2,r3,"
-	// ------------------------------------------------------------
-	char buffer[MAX_DATA];
-	bzero(buffer, MAX_DATA);
-
-	// REMOVE below code and write your own Reply.
-	struct Reply reply;
-	reply.status = SUCCESS;
-	reply.num_member = 5;
-	reply.port = 11024;
 	return reply;
-}
-
-// This function is NOT MY WORK
-// Credit: cc.byexamples.com/2007/04/08/non-blocking-user-input-in-loop-without-ncurses/
-// It returns true (1) if there is new input on stdin
-int kbhit(){
-    struct timeval tv = {1, 0};//1s
-    fd_set fds;
-    FD_ZERO(&fds);
-    FD_SET(STDIN_FILENO, &fds);
-    select(STDIN_FILENO+1, &fds, NULL, NULL, &tv);
-    return FD_ISSET(STDIN_FILENO, &fds);
 }
 
 void* input_listener_worker(int chat_server){
@@ -186,7 +122,6 @@ void* input_listener_worker(int chat_server){
 
 /*
  * Get into the chat mode
- *
  * @parameter host     host address
  * @parameter port     port
  */
@@ -224,28 +159,4 @@ void enter_chatmode(const char* host, const int port){
 
 	close(chat_server);
 	printf("Exiting ChatMode\n");
-	return;
-
-	// ------------------------------------------------------------
-	// GUIDE 2:
-	// Once the client have been connected to the server, we need
-	// to get a message from the user and send it to server.
-	// At the same time, the client should wait for a message from
-	// the server.
-	// ------------------------------------------------------------
-
-	// ------------------------------------------------------------
-	// IMPORTANT NOTICE:
-	// 1. To get a message from a user, you should use a function
-	// "void get_message(char*, int);" in the interface.h file
-	//
-	// 2. To print the messages from other members, you should use
-	// the function "void display_message(char*)" in the interface.h
-	//
-	// 3. Once a user entered to one of chatrooms, there is no way
-	//    to command mode where the user  enter other commands
-	//    such as CREATE,DELETE,LIST.
-	//    Don't have to worry about this situation, and you can
-	//    terminate the client program by pressing CTRL-C (SIGINT)
-	// ------------------------------------------------------------
 }

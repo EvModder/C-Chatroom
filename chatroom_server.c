@@ -3,8 +3,6 @@
 //Server available at chatroom-438.cf, or you can run your own
 
 #include "interface.h"
-#include <sys/socket.h>
-#include <errno.h>
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -173,12 +171,8 @@ int main(int argc, char** argv){
 		bind(serv_sock, (struct sockaddr*) &serv_addr, addr_sz) || 
 		listen(serv_sock, 5))
 	{
-		// This is the most common/likely error by far
-		if(errno == EADDRINUSE) error("Error: Address already in use!");
-
-		//Everything else
-		else perror("Error: ");
-		return EXIT_FAILURE;
+		perror("Error");
+		exit(EXIT_FAILURE);
 	}
 	printf("Server started on port: %d\n", port);
 	printf("Beginning loop to wait for clients...\n");

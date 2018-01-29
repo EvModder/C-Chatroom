@@ -6,7 +6,7 @@
  *
  *    DO NOT MODIFY THIS FILE.  I CAN DO WHATEVER I WANT, OKAY!?
  *
- * Version: 1.0
+ * Version: 1.0.3 // I've made 2 changes, 1 bugfix
  ******************************************************************/
 #ifndef INTERFACE_H_
 #define INTERFACE_H_
@@ -88,7 +88,7 @@ struct Reply{
  * DO NOT MODIFY THIS FUNCTION
  * This function convert input string to uppercase.
  */
-void touppercase(char* str, int n){
+void touppercase(char* str){
 	int i;
 	for(i=0; str[i]; ++i) str[i] = toupper((unsigned char)str[i]);
 }
