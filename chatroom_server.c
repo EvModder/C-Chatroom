@@ -1,4 +1,4 @@
-//Team: Nathaniel Leake 42400377, Chase Elander ###00####
+//Team: Nathaniel Leake 424003778, Chase Elander ###00####
 //To compile: "make" or "gcc chatroom_server.c";
 //Server available at chatroom-438.cf, or you can run your own
 
@@ -36,6 +36,7 @@ int sync_printf(const char *format, ...){
 	va_end(args);
 }
 
+//Nice utility function for converting addresses to strings
 void addr_to_string(struct sockaddr_in addr, char* buffer){
 	sprintf(buffer, "%d.%d.%d.%d",
 		addr.sin_addr.s_addr & 0xFF,
@@ -116,7 +117,7 @@ void* client_listener_worker(client_t* client){
 
 	// A timeout for receiving the join message from a client
 	struct timeval tv = {60, 0};// 1 minute timeout for first message
-	setsockopt(client->sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
+	setsockopt(client->sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
 	if(!USE_USERNAMES || read(client->sockfd, buffer, MAX_DATA) > 0){
 		// This isn't required for this hw assignment, but usernames are nice
@@ -125,7 +126,7 @@ void* client_listener_worker(client_t* client){
 			strcpy(client->name, buffer);
 		}
 		tv.tv_sec = 600;// 1 hour timeout if inactive
-		setsockopt(client->sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
+		setsockopt(client->sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
 		// Read until there is an error, the connection dies, or the client says "QUIT"
 		while(read(client->sockfd, buffer, MAX_DATA) > 0 && !startswith(buffer, "QUIT")){

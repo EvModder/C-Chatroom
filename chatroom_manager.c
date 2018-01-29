@@ -1,4 +1,4 @@
-//Team: Nathaniel Leake 42400377, Chase Elander ###00####
+//Team: Nathaniel Leake 424003778, Chase Elander ###00####
 //To compile: "make" or "gcc chatroom_server.c";
 //Server available at chatroom-438.cf, or you can run your own
 
@@ -15,8 +15,22 @@ int REPLY_SIZE = sizeof(struct Reply);
  * @parameter reply    struct to store the result
  */
 void run_command(char* command, struct Reply* reply){
+	// TODO: comment out debug lines for final submission
 	printf("Received: %s\n", command);
-	//TODO: Implement this
+
+	// TODO: Implement these
+	if(startswith(command, "LIST")){
+
+	}
+	else if(startswith(command, "JOIN ")){
+		// substr(5) to get chatroom name
+	}
+	else if(startswith(command, "CREATE ")){
+		
+	}
+	else if(startswith(command, "DELETE ")){
+		
+	}
 	reply->status = SUCCESS;
 }
 
@@ -24,7 +38,7 @@ void run_command(char* command, struct Reply* reply){
 void* client_response_worker(int cli_sock){
 	// Receive command from client with 5 second timeout
 	struct timeval tv = {5, 0};
-	setsockopt(cli_sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
+	setsockopt(cli_sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 	char command[MAX_DATA];
 	if(read(cli_sock, command, MAX_DATA) > 0){
 		struct Reply reply;

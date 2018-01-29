@@ -1,4 +1,4 @@
-//Team: Nathaniel Leake 42400377, Chase Elander ###00####
+//Team: Nathaniel Leake 424003778, Chase Elander ###00####
 //To compile: "make" or "gcc chatroom_client.c";
 //Server available at chatroom-438.cf, or you can run your own
 
@@ -93,7 +93,7 @@ struct Reply process_command(const int sockfd, char* command){
 	}
 	// Receive reply from server with 10 second timeout
 	struct timeval tv = {10, 0};
-	setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
+	setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 	if(read(sockfd, &reply, REPLY_SIZE) <= 0){
 		perror("Missing/Invalid response from server");
 	}
@@ -148,11 +148,11 @@ void enter_chatmode(const char* host, const int port){
 
 	// (Parent) Process to display messages from server
 	while(read(chat_server, message, MAX_DATA) > 0 && chat_server){
-		if(startswith(message, "QUIT")) break;
+		// if(startswith(message, "QUIT")) break;
 		display_message(message);
 	}
-	if(startswith(message, "QUIT")) printf("Kicked from server :O\n");
-	else printf("Connection closed\n");
+	// if(startswith(message, "QUIT")) printf("Kicked from server :O\n");
+	// else printf("Connection closed\n");
 
 	// Close the pthread if it's still going
 	pthread_cancel(tid);
