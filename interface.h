@@ -10,10 +10,21 @@
  ******************************************************************/
 #ifndef INTERFACE_H_
 #define INTERFACE_H_
-#include <ctype.h>
+// #include <ctype.h>
+#include <stdio.h>
+#include <string.h>
 
-// maximum size of data for the communication using TCP/IP
+// Maximum size of data for the communication using TCP/IP
 #define MAX_DATA 256
+
+// Maximum number of clients per Chat Server
+#define MAX_CLIENTS 128
+
+// Wether to require/enable usernames for clients
+#define USE_USERNAMES 0
+
+// Wether chatrooms should log all messages
+#define LOG_MESSAGES 1
 
 /*
  * This enum represents the result of a command.
@@ -96,8 +107,9 @@ void display_title(){
 	printf("\n========= CHAT ROOM CLIENT =========\n");
 	printf(" Command Lists and Format:\n");
 	printf(" CREATE <name>\n");
-	printf(" JOIN <name>\n");
 	printf(" DELETE <name>\n");
+	printf(" JOIN <name>\n");
+	printf(" QUIT\n");
 	printf(" LIST\n");
 	printf("=====================================\n");
 }
