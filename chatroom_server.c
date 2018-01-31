@@ -169,7 +169,7 @@ int main(int argc, char** argv){
 	// Open socket, bind it to a port, and listen for connections
 	// If any of these fails, we terminate with an error message.
 	if((serv_sock = socket(AF_INET, SOCK_STREAM, 0)) < 0 ||
-		bind(serv_sock, (struct sockaddr*) &serv_addr, addr_sz) || 
+		bind(serv_sock, (struct sockaddr*) &serv_addr, addr_sz) ||
 		listen(serv_sock, 5))
 	{
 		perror("Error");
