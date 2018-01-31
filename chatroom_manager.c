@@ -1,4 +1,4 @@
-//Team: Nathaniel Leake 424003778, Chase Elander ###00####
+//Team: Nathaniel Leake 424003778, Chase Elander 423005409
 //To compile: "make" or "gcc chatroom_server.c";
 //Server available at chatroom-438.cf, or you can run your own
 
