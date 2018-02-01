@@ -1,4 +1,4 @@
-//Team: Nathaniel Leake 424003778, Chase Elander 423005409
+//Team: Nathaniel Leake 424003778, Chase Elander ###00####
 //To compile: "make" or "gcc chatroom_server.c";
 //Server available at chatroom-438.cf, or you can run your own
 
@@ -7,6 +7,15 @@
 #include <stdlib.h>
 
 int REPLY_SIZE = sizeof(struct Reply);
+int SERVER_PORT = 59254;
+
+void create_chatroom(int port){
+	char str[12];
+	sprintf(str, "%d", port);
+	char *argv[]={"server.o", str, NULL};
+	printf("Starting chatroom on port %d\n", port);
+	if(fork() == 0) execv("./server.o", argv);
+}
 
 /*
  * Handle a command from a client and store the result in the
@@ -26,7 +35,9 @@ void run_command(char* command, struct Reply* reply){
 		// substr(5) to get chatroom name
 	}
 	else if(startswith(command, "CREATE ")){
-		
+		//TODO: idk something for sure
+		pthread_t tid;
+		pthread_create(&tid, NULL, &create_chatroom, ++SERVER_PORT);
 	}
 	else if(startswith(command, "DELETE ")){
 		
@@ -51,7 +62,7 @@ void* client_response_worker(int cli_sock){
 
 int main(int argc, char** argv){
 	//If not specified, use this port as default.
-	unsigned short port = argc > 1 ? atoi(argv[1]) : 59254;
+	unsigned short port = argc > 1 ? atoi(argv[1]) : SERVER_PORT;
 
 	// Structures used for setting up the server
 	int serv_sock, cli_sock, addr_sz;
