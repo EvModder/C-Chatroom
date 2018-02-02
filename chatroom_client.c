@@ -2,7 +2,6 @@
 //To compile: "make" or "gcc chatroom_client.c";
 //Server available at chatroom-438.cf, or you can run your own
 
-#define BUFFER_SIZE 256
 #include "interface.h"
 #include <netinet/in.h>
 #include <stdlib.h>
@@ -34,7 +33,7 @@ int main(int argc, char** argv){
 	while(1){
 		// Read a command from the user
 		get_command(command, MAX_DATA);
-		touppercase(command, strlen(command) - 1);
+		touppercase(command);
 
 		// If exiting the program
 		if(startswith(command, "EXIT")) break;
@@ -83,74 +82,9 @@ int connect_to(const char* host, const unsigned short port){
  * @return    Reply
  */
 struct Reply process_command(const int sockfd, char* command){
-	
-	char buffer[BUFFER_SIZE]; // character buffer
-	send(sockfd, command, BUFFER_SIZE, 0);
-	recv(sockfd, buffer, BUFFER_SIZE, 0);
-
-	//String Tokenize to Status num_member port list_room
-	char * status = strtok(buffer, " ");
-	char * num_member= strtok(NULL, " ");
-	char * port = strtok(NULL, " ");
-	char * list_room = strtok(NULL, " ");
-	
-	
+	// If reply status is never set, assume FAILURE_UNKNOWN
 	struct Reply reply;
-	
-	
-	
-	switch(status){						//Parsing for status
-		case "SUCCESS\0":
-			reply.status = SUCCESS;
-			break;
-		case "FAILURE_ALREADY_EXISTS":
-			reply.status = FAILURE_ALREADY_EXISTS
-			break;
-		case "FAILURE_NOT_EXISTS":
-			reply.status = FAILURE_NOT_EXISTS;
-			break;
-		case "FAILURE_INVALID":
-			reply.status = "FAILURE_INVALID";
-			break;
-		case "FAILURE_UNKNOWN":
-			reply.status = "FAILURE_UNKNOWN";
-			break;
-		default:	// If reply status is never set, assume FAILURE_UNKNOWN
-			reply.status = FAILURE_UNKNOWN;
-	}
-
-	switch(num_member){					//Parsing for num_member
-		case NULL:
-			break;
-		default:
-			reply.num_member = atoi(num_member);
-	}
-
-	switch(port){						//Parsing for port
-		case NULL:
-			break;
-		default:
-			reply.port = atoi(port);
-	}
-
-	switch(list_room){					//Parsing for list_room
-		case NULL:
-			break;
-		default:
-			strcpy(reply.list_room, list_room);
-	}
-
-	//I think we should retrun reply here
-
-
-/*  ///I implemented a switch statement to be cleaner.   ////
-	//// This code is now Zombie, and should be removed ////
-	if (strcmp(status, "SUCCESS\0") == 0 ){
-		reply.status = SUCCESS;
-	} else if (strcmp(status, "FAILURE_ALREADY_EXISTS") == 0 ){
-		reply.status = "FAILURE_ALREADY_EXISTS";
-	}
-*/
+	reply.status = FAILURE_UNKNOWN;
 
 	// Write command to server
 	if(write(sockfd, command, MAX_DATA) < 0){
