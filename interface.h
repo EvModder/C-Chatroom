@@ -20,6 +20,9 @@
 // Maximum number of clients per Chat Server
 #define MAX_CLIENTS 128
 
+// Maximum number of Chat Servers per machine
+#define MAX_ROOMS 64
+
 // Wether to require/enable usernames for clients
 #define USE_USERNAMES 0
 

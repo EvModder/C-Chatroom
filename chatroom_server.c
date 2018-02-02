@@ -175,6 +175,11 @@ int main(int argc, char** argv){
 		perror("Error");
 		exit(EXIT_FAILURE);
 	}
+
+	// Zero out the client array
+	int i = 0;
+	for(; i<MAX_CLIENTS; ++i) clients[i] = NULL;
+
 	printf("Server started on port: %d\n", port);
 	printf("Beginning loop to wait for clients...\n");
 

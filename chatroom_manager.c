@@ -22,6 +22,7 @@ typedef struct{
 
 chatroom_t* chatrooms[MAX_ROOMS];
 
+// Add a chatroom the the chatroom container
 int add_room(chatroom_t* new_room){
 	if(++room_count == MAX_ROOMS){
 		--room_count;
@@ -38,8 +39,10 @@ int add_room(chatroom_t* new_room){
 	--room_count;
 	return 0;
 }
+
+// Free space when a room is DELETEd
 int del_room(char* name){
-	int i=0;
+	int i = 0;
 	for(; i<MAX_ROOMS; ++i){
 		if(chatrooms[i] != NULL && strcmp(chatrooms[i]->name, name) == 0){
 			// Open this space for a new chatroom
@@ -52,6 +55,8 @@ int del_room(char* name){
 	}
 	return 0;
 }
+
+// Get a reference to an existing chatroom
 chatroom_t* get_room(char* name){
 	int i = 0;
 	for(; i<MAX_ROOMS; ++i){
@@ -74,18 +79,28 @@ void run_command(char* command, struct Reply* reply){
 	// TODO: comment out debug lines for final submission
 	printf("Received: %s\n", command);
 
-	// TODO: Implement these
 	if(startswith(command, "LIST")){
-		// reply->list_room()
-		string reply_temp = SUCCESS + " 0 0 ";
+		// Build a cstring list of all the available chatrooms
+		char room_list[MAX_DATA];
+		room_list[0] = '\0';
 
+		// Iterate over available rooms
 		int i = 0;
 		for(; i<MAX_ROOMS; ++i){
-			if(chatrooms[i] != NULL){
-				reply_temp = reply_temp + chatrooms[i]->name + ",";
+			if(chatrooms[i]){
+				strcat(room_list, chatrooms[i]->name);
+				strcat(room_list, ", ");
 			}
 		}
-		strcpy(reply->list_room, reply_temp);
+		if(strlen(room_list) == 0){
+			strcpy(reply->list_room,
+				"There are no open chatrooms!\nTry 'CREATE <chatroom>'");
+		}
+		else{
+			// Cut off the trailing ", "
+			room_list[strlen(room_list)-2] = '\0';
+			strcpy(reply->list_room, room_list);
+		}
 	}
 	else if(startswith(command, "JOIN ")){//substr(5) to get name
 		chatroom_t* room = get_room(command+5);
@@ -97,12 +112,6 @@ void run_command(char* command, struct Reply* reply){
 		else{
 			reply->status = FAILURE_NOT_EXISTS;
 		}
-		// if(chatrooms.count(room_name)){
-		// 	reply->num_member = 
-		// }
-		// else{
-		// 	reply->status = FAILURE_NOT_EXISTS;
-		// }
 	}
 	else if(startswith(command, "CREATE ")){//substr(7) to get name
 		if(get_room(command+7)){
