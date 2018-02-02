@@ -16,11 +16,11 @@ int main(int argc, char** argv){
 	char* host_addr = argc > 1 ? argv[1] : "chat-room-438.cf";
 	unsigned short port = argc > 2 ? atoi(argv[2]) : 59254;
 	printf("Host = %s, Port = %d\n", host_addr, port);
-	// if(argc != 3){
-	// 	fprintf(stderr, "Usage: Enter host address and port number\n");
-	// 	fprintf(stderr, "Example: ./a.out chat-room-438.cf 59254\n");
-	// 	return EXIT_FAILURE;
-	// }
+/*	if(argc != 3){
+		fprintf(stderr, "Usage: Enter host address and port number\n");
+		fprintf(stderr, "Example: ./a.out chat-room-438.cf 59254\n");
+		return EXIT_FAILURE;
+	}*/
 
 	// Ping the Chatroom Manager to make sure we can send commands
 	int sockfd = connect_to(host_addr, port);
@@ -47,7 +47,7 @@ int main(int argc, char** argv){
 
 		// If a successful JOIN, put this client in chatmode
 		if(reply.status == SUCCESS && startswith(command, "JOIN")){
-			enter_chatmode(reply.host, reply.port);
+			enter_chatmode(/*reply.host*/host_addr, reply.port);
 		}
 	}
 }
@@ -105,8 +105,11 @@ void* input_listener_worker(int chat_server){
 	char message[MAX_DATA];
 	do{
 		get_message(message, MAX_DATA-1);
+
+		// Gracefully exit if the server decides to kick this client
 		if(startswith(message, "QUIT")) break;
 
+		// Add a newline character to the end of this message
 		message[strlen(message)+1] = '\0';
 		message[strlen(message)] = '\n';
 	} while(write(chat_server, message, MAX_DATA) >= 0);
