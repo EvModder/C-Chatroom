@@ -7,84 +7,59 @@
 #include <stdlib.h>
 
 int REPLY_SIZE = sizeof(struct Reply);
-int SERVER_PORT = 59254;
-int START_PORT = 4000;
+int NEXT_PORT = 59254;
 
-void create_chatroom(int port, char * name){
-	
-	char buff[526];
+// room_count = # of active rooms, open_slot = 1st available
+static unsigned int room_count = 0, open_slot = 0;
 
-	for (auto const& t : (* chatroom_map)){ //check that a chatroom with this
-		if(strcmp(t.first.c_str(), name) == 0) { //  name does not already exists
-			//it does already exist
-			strcpy(buff, FAILURE_ALREADY_EXISTS.c_str());
-			send(port, buff, 526, 0); //Send the failure back
-			return;
-		}
-	}
-
-	//The chatroom doesn't exist yet
-
-	//initialize new chatroom and push into chatroom_map
-	int chat_socket_temp = passiveTCPConnection(chat_port_temp);
-	struct Chatroom * chat = new Chatroom();
-	chat->socket = chat_socket_temp;
-	chat->port = chat_port_temp;
-	chat->num_member = 0;
-	chat->name = string(name);
-	(*chatroom_map)[name] = chat;
-
-	chat_port_temp++; //iterate chat_port_temp to ensure unique ports
-
-	string reply_temp = SUCCESS + " 0 " + to_string(chat->port);
-	strcpy(buff, reply_temp.c_str());
-	send(port, buff, 526, 0); //Send it back to client
-
-/*                            Original Create chatroom code
-	char str[12];
-	sprintf(str, "%d", port);
-	char *argv[]={"server.o", str, NULL};
-	printf("Starting chatroom on port %d\n", port);
-	if(fork() == 0) execv("./server.o", argv);
-	*/
-}
-
-struct Chatroom {
-	int socket;
+// Chatrooms currently available to join
+typedef struct{
+	char name[MAX_DATA];
+	char host[MAX_DATA];
 	int port;
 	int num_members;
-	string name;
-	pthread_t * thread;
-	vector<int> clients;
-};
+} chatroom_t;
 
-map<string, struct Chatroom * > *chatroom_map;
+chatroom_t* chatrooms[MAX_ROOMS];
 
-int chat_port_temp = START_PORT;
-
-void list_command(){
-	string reply_temp = SUCCESS + " 0 0 ";
-	for (auto const& t : (*chatroom_map)){
-		reply_temp = reply_temp + t.first + ",";
+int add_room(chatroom_t* new_room){
+	if(++room_count == MAX_ROOMS){
+		--room_count;
+		return 0;
 	}
-
-	//Send it back to Client
-	return;
+	int i;
+	for(i=open_slot; i<MAX_ROOMS; ++i){
+		if(!chatrooms[i]){
+			chatrooms[i] = new_room;
+			open_slot = i+1;
+			return 1;
+		}
+	}
+	--room_count;
+	return 0;
 }
-void join_command(char * name){
-	string reply_temp = "";
-
-	auto t = (chatroom_map).find(string(name));//verify it exists
-	if( t == (*chatroom_map).end()){
-		reply_temp = "FAILURE_NOT_EXISTS -1 -1";
+int del_room(char* name){
+	int i=0;
+	for(; i<MAX_ROOMS; ++i){
+		if(chatrooms[i] != NULL && strcmp(chatrooms[i]->name, name) == 0){
+			// Open this space for a new chatroom
+			free(chatrooms[i]);
+			chatrooms[i] = NULL;
+			if(i < open_slot) open_slot = i;
+			--room_count;
+			return 1;
+		}
 	}
-	else{
-		struct Chatroom * ch = (*chatroom_map)[string(name)];
-			ch ->num_member +=1;
-			reply_temp = "SUCCESS " + to_string(c->num_member) + " " + to_string(c->port);
+	return 0;
+}
+chatroom_t* get_room(char* name){
+	int i = 0;
+	for(; i<MAX_ROOMS; ++i){
+		if(chatrooms[i] != NULL && strcmp(chatrooms[i]->name, name) == 0){
+			return chatrooms[i];
+		}
 	}
-
-	//Send back to client (maybe with write command?)
+	return NULL;
 }
 
 /*
@@ -94,26 +69,69 @@ void join_command(char * name){
  * @parameter reply    struct to store the result
  */
 void run_command(char* command, struct Reply* reply){
+	reply->status = SUCCESS;
+
 	// TODO: comment out debug lines for final submission
 	printf("Received: %s\n", command);
 
 	// TODO: Implement these
 	if(startswith(command, "LIST")){
-		list_command();
+		// reply->list_room()
+		string reply_temp = SUCCESS + " 0 0 ";
+
+		int i = 0;
+		for(; i<MAX_ROOMS; ++i){
+			if(chatrooms[i] != NULL){
+				reply_temp = reply_temp + chatrooms[i].name + ",";
+			}
+		}
+		strcpy(reply->list_room, reply_temp);
 	}
-	else if(startswith(command, "JOIN ")){
-		// substr(5) to get chatroom name
-		join_command(substr(5));
+	else if(startswith(command, "JOIN ")){//substr(5) to get name
+		chatroom_t* room = get_room(command+5);
+		if(room){
+			reply->num_member = ++(room->num_members);
+			strcpy(reply->host, room->host);
+			reply->port = room->port;
+		}
+		else{
+			reply->status = FAILURE_NOT_EXISTS;
+		}
+		// if(chatrooms.count(room_name)){
+		// 	reply->num_member = 
+		// }
+		// else{
+		// 	reply->status = FAILURE_NOT_EXISTS;
+		// }
 	}
-	else if(startswith(command, "CREATE ")){
-		//TODO: idk something for sure
-		pthread_t tid;
-		pthread_create(&tid, NULL, &create_chatroom, ++SERVER_PORT);
+	else if(startswith(command, "CREATE ")){//substr(7) to get name
+		if(get_room(command+7)){
+			reply->status = FAILURE_ALREADY_EXISTS;
+		}
+		else{
+			// Create a new chatroom and add it to the list
+			chatroom_t* room = (chatroom_t*) malloc(sizeof(chatroom_t));
+			strcpy(room->name, command+7);
+			strcpy(room->host, "uhh stretch goals not reached");
+			room->port = ++NEXT_PORT;
+			room->num_members = 0;
+			add_room(room);
+
+			// Open the new chatroom as a separate process
+			char str[12];
+			sprintf(str, "%d", room->port);
+			char *argv[]={"server.o", str, NULL};
+			// printf("Starting chatroom on port %d\n", port);
+			if(fork() == 0) execv("./server.o", argv);
+		}
 	}
 	else if(startswith(command, "DELETE ")){
-		
+		if(del_room(command+7));
+		else reply->status = FAILURE_NOT_EXISTS;
 	}
-	reply->status = SUCCESS;
+	else{
+		reply->status = FAILURE_INVALID;
+	}
 }
 
 // This is the worker thread for a client (used to initialize pthreads)
@@ -133,7 +151,7 @@ void* client_response_worker(int cli_sock){
 
 int main(int argc, char** argv){
 	//If not specified, use this port as default.
-	unsigned short port = argc > 1 ? atoi(argv[1]) : SERVER_PORT;
+	unsigned short port = argc > 1 ? atoi(argv[1]) : NEXT_PORT;
 
 	// Structures used for setting up the server
 	int serv_sock, cli_sock, addr_sz;
@@ -152,6 +170,11 @@ int main(int argc, char** argv){
 		perror("Error");
 		exit(EXIT_FAILURE);
 	}
+
+	// Zero out the chatrooms array
+	int i = 0;
+	for(; i<MAX_ROOMS; ++i) chatrooms[i] = NULL;
+
 	printf("Server started on port: %d\n", port);
 	printf("Ready to begin handling commands\n");
 
