@@ -82,7 +82,7 @@ void run_command(char* command, struct Reply* reply){
 		int i = 0;
 		for(; i<MAX_ROOMS; ++i){
 			if(chatrooms[i] != NULL){
-				reply_temp = reply_temp + chatrooms[i].name + ",";
+				reply_temp = reply_temp + chatrooms[i]->name + ",";
 			}
 		}
 		strcpy(reply->list_room, reply_temp);
