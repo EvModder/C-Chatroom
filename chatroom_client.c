@@ -15,7 +15,8 @@ int main(int argc, char** argv){
 	//If not specified, use defaults.
 	char* host_addr = argc > 1 ? argv[1] : "chat-room-438.cf";
 	unsigned short port = argc > 2 ? atoi(argv[2]) : 59254;
-	printf("Host = %s, Port = %d\n", host_addr, port);
+	// printf("Host = %s, Port = %d\n", host_addr, port);
+
 /*	if(argc != 3){
 		fprintf(stderr, "Usage: Enter host address and port number\n");
 		fprintf(stderr, "Example: ./a.out chat-room-438.cf 59254\n");
