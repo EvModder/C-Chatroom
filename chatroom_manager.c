@@ -18,7 +18,7 @@ void create_chatroom(int port, char * name){
 		if(strcmp(t.first.c_str(), name) == 0) { //  name does not already exists
 			//it does already exist
 			strcpy(buff, FAILURE_ALREADY_EXISTS.c_str());
-			send(port, buff, 526, 0); //Send the failure
+			send(port, buff, 526, 0); //Send the failure back
 			return;
 		}
 	}
@@ -38,7 +38,7 @@ void create_chatroom(int port, char * name){
 
 	string reply_temp = SUCCESS + " 0 " + to_string(chat->port);
 	strcpy(buff, reply_temp.c_str());
-	send(sd, buff, 526, 0); //Send it back to client
+	send(port, buff, 526, 0); //Send it back to client
 
 /*                            Original Create chatroom code
 	char str[12];
