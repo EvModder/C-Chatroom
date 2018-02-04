@@ -5,26 +5,32 @@
 #include "interface.h"
 #include <netinet/in.h>
 #include <stdlib.h>
+#include <netdb.h>
+#include <arpa/inet.h>
 
 int connect_to(const char* host, const unsigned short port);
 struct Reply process_command(const int sockfd, char* command);
 void enter_chatmode(const char* host, const int port);
+int hostname_to_ip(char* hostname, char* ip);
 int REPLY_SIZE = sizeof(struct Reply);
 
 int main(int argc, char** argv){
 	//If not specified, use defaults.
 	char* host_addr = argc > 1 ? argv[1] : "chat-room-438.cf";
+	char* ip_addr[16];
+	hostname_to_ip(host_addr, ip_addr);
+
 	unsigned short port = argc > 2 ? atoi(argv[2]) : 59254;
 	// printf("Host = %s, Port = %d\n", host_addr, port);
 
-/*	if(argc != 3){
+	/*	if(argc != 3){
 		fprintf(stderr, "Usage: Enter host address and port number\n");
 		fprintf(stderr, "Example: ./a.out chat-room-438.cf 59254\n");
 		return EXIT_FAILURE;
-	}*/
+		}*/
 
 	// Ping the Chatroom Manager to make sure we can send commands
-	int sockfd = connect_to(host_addr, port);
+	int sockfd = connect_to(ip_addr, port);
 	if(sockfd < 0 || write(sockfd, "PING", 4) < 0){
 		exit(EXIT_FAILURE);
 	}
@@ -40,7 +46,7 @@ int main(int argc, char** argv){
 		if(startswith(command, "EXIT")) break;
 
 		// Connect to the Chatroom Manager
-		if((sockfd = connect_to(host_addr, port)) < 0) exit(EXIT_FAILURE);
+		if((sockfd = connect_to(ip_addr, port)) < 0) exit(EXIT_FAILURE);
 
 		// Send command to the Chatroom Manager
 		struct Reply reply = process_command(sockfd, command);
@@ -48,7 +54,7 @@ int main(int argc, char** argv){
 
 		// If a successful JOIN, put this client in chatmode
 		if(reply.status == SUCCESS && startswith(command, "JOIN")){
-			enter_chatmode(/*reply.host*/host_addr, reply.port);
+			enter_chatmode(/*reply.host*/ip_addr, reply.port);
 		}
 	}
 }
@@ -163,4 +169,20 @@ void enter_chatmode(const char* host, const int port){
 
 	close(chat_server);
 	printf("Exiting ChatMode\n");
+}
+
+int hostname_to_ip(char* hostname, char* ip){
+	struct hostent* he;
+	struct in_addr** addr_list;
+	int i;
+	if((he = gethostbyname(hostname))){
+		addr_list = (struct in_addr**) he->h_addr_list;
+		for(i=0; addr_list[i]; ++i){
+			// Return the file one
+			strcpy(ip, inet_ntoa(*addr_list[i]));
+			return EXIT_SUCCESS;
+		}
+	}
+	herror("gethostbyname");
+	return EXIT_FAILURE;
 }
